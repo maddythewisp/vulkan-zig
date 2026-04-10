@@ -1066,6 +1066,10 @@ const Renderer = struct {
         try self.writer.writeAll("packed struct(u32) {");
 
         for (container.fields) |field| {
+            if (field.comment) |comment| {
+                try self.renderDocComment(comment);
+            }
+
             const bits = field.bits.?;
             try self.writeIdentifierWithCase(.snake, field.name);
             try self.writer.writeAll(": ");
@@ -1117,6 +1121,11 @@ const Renderer = struct {
         }
 
         for (container.fields) |field| {
+            if (field.comment) |comment| {
+                try self.writer.writeAll("\n");
+                try self.renderDocComment(comment);
+            }
+
             try self.writeIdentifierWithCase(.snake, field.name);
             try self.writer.writeAll(": ");
             if (field.bits) |bits| {

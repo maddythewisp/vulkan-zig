@@ -69,6 +69,7 @@ pub const Container = struct {
         bits: ?usize,
         is_buffer_len: bool,
         is_optional: bool,
+        comment: ?[]const u8,
     };
 
     stype: ?[]const u8,
