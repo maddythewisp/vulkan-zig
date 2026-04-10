@@ -282,6 +282,7 @@ fn parseContainer(allocator: Allocator, ty: *xml.Element, is_union: bool, api: r
                 .fields = members,
                 .is_union = is_union,
                 .extends = maybe_extends,
+                .comment = ty.getAttribute("comment"),
             },
         },
     };

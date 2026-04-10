@@ -76,6 +76,7 @@ pub const Container = struct {
     extends: ?[]const []const u8,
     fields: []Field,
     is_union: bool,
+    comment: ?[]const u8,
 };
 
 pub const Enum = struct {

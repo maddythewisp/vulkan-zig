@@ -1098,6 +1098,11 @@ const Renderer = struct {
     }
 
     fn renderContainer(self: *Self, name: []const u8, container: reg.Container) !void {
+        if (container.comment) |comment| {
+            try self.writer.writeByte('\n');
+            try self.renderDocComment(comment);
+        }
+
         try self.writer.writeAll("pub const ");
         try self.renderName(name);
         try self.writer.writeAll(" = ");
