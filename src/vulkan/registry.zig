@@ -47,6 +47,7 @@ pub const ApiConstant = struct {
 
     name: []const u8,
     value: Value,
+    comment: ?[]const u8,
 };
 
 pub const Tag = struct {
@@ -90,6 +91,7 @@ pub const Enum = struct {
     pub const Field = struct {
         name: []const u8,
         value: Value,
+        comment: ?[]const u8,
     };
 
     fields: []Field,
@@ -210,7 +212,10 @@ pub const Require = struct {
     pub const EnumExtension = struct {
         pub const Value = union(enum) {
             field: Enum.Field,
-            new_api_constant_expr: []const u8,
+            new_api_constant: struct {
+                expr: []const u8,
+                comment: ?[]const u8,
+            },
         };
         extends: []const u8,
         extnumber: ?u31,
