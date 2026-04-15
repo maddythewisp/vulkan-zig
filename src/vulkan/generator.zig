@@ -43,12 +43,15 @@ const EnumFieldMerger = struct {
             for (req.extends) |enum_ext| {
                 switch (enum_ext.value) {
                     .field => try self.putEnumExtension(enum_ext.extends, enum_ext.value.field),
-                    .new_api_constant_expr => |expr| try self.api_constants.put(
+                    .new_api_constant => |expr| try self.api_constants.put(
                         self.arena,
                         enum_ext.extends,
                         .{
                             .name = enum_ext.extends,
-                            .value = .{ .expr = expr },
+                            .value = .{
+                                .expr = expr.expr,
+                            },
+                            .comment = expr.comment,
                         },
                     ),
                 }

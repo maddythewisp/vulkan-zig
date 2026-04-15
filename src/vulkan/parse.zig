@@ -297,6 +297,7 @@ fn parseContainer(allocator: Allocator, ty: *xml.Element, is_union: bool, api: r
                 .fields = members,
                 .is_union = is_union,
                 .extends = maybe_extends,
+                .comment = ty.getAttribute("comment"),
             },
         },
     };
@@ -517,9 +518,10 @@ fn parseEnumFields(allocator: Allocator, elem: *xml.Element, api: registry.Api) 
 }
 
 fn parseEnumField(field: *xml.Element) !registry.Enum.Field {
-    const is_compat_alias = if (field.getAttribute("comment")) |comment|
-        mem.eql(u8, comment, "Backwards-compatible alias containing a typo") or
-            mem.eql(u8, comment, "Deprecated name for backwards compatibility")
+    const comment = field.getAttribute("comment");
+    const is_compat_alias = if (comment) |contents|
+        mem.eql(u8, contents, "Backwards-compatible alias containing a typo") or
+            mem.eql(u8, contents, "Deprecated name for backwards compatibility")
     else
         false;
 
@@ -551,6 +553,7 @@ fn parseEnumField(field: *xml.Element) !registry.Enum.Field {
     return registry.Enum.Field{
         .name = name,
         .value = value,
+        .comment = comment,
     };
 }
 
@@ -699,6 +702,7 @@ fn parseApiConstants(
             try api_constants.append(allocator, .{
                 .name = constant.getAttribute("name") orelse return error.InvalidRegistry,
                 .value = .{ .expr = expr },
+                .comment = constant.getAttribute("comment") orelse null,
             });
         }
     }
@@ -723,17 +727,21 @@ fn parseDefines(
             continue;
         }
 
+        const comment = ty.getAttribute("comment");
+
         const name = ty.getCharData("name") orelse continue;
         if (mem.eql(u8, name, "VK_HEADER_VERSION") or mem.eql(u8, name, "VKSC_API_VARIANT")) {
             try api_constants.append(allocator, .{
                 .name = name,
                 .value = .{ .expr = mem.trim(u8, ty.children[2].char_data, " ") },
+                .comment = comment,
             });
         } else {
             var xctok = cparse.XmlCTokenizer.init(ty);
             try api_constants.append(allocator, .{
                 .name = name,
                 .value = cparse.parseVersion(&xctok) catch continue,
+                .comment = comment,
             });
         }
     }
@@ -798,6 +806,8 @@ fn parseEnumExtension(elem: *xml.Element, parent_extnumber: ?u31) !?registry.Req
         return null;
     }
 
+    const comment = elem.getAttribute("comment");
+
     const extends = elem.getAttribute("extends") orelse {
         const expr = elem.getAttribute("value") orelse return null;
         // This adds a value to the 'API constants' set
@@ -805,7 +815,12 @@ fn parseEnumExtension(elem: *xml.Element, parent_extnumber: ?u31) !?registry.Req
         return registry.Require.EnumExtension{
             .extends = name,
             .extnumber = null,
-            .value = .{ .new_api_constant_expr = expr },
+            .value = .{
+                .new_api_constant = .{
+                    .expr = expr,
+                    .comment = comment,
+                },
+            },
         };
     };
 
@@ -837,6 +852,7 @@ fn parseEnumExtension(elem: *xml.Element, parent_extnumber: ?u31) !?registry.Req
                 .field = .{
                     .name = name,
                     .value = .{ .int = value },
+                    .comment = comment,
                 },
             },
         };

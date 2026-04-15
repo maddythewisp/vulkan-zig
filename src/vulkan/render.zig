@@ -669,6 +669,10 @@ const Renderer = struct {
     }
 
     fn renderApiConstant(self: *Self, api_constant: reg.ApiConstant) !void {
+        if (api_constant.comment) |comment| {
+            try self.renderDocComment(comment);
+        }
+
         try self.writer.writeAll("pub const ");
         try self.renderName(api_constant.name);
         try self.writer.writeAll(" = ");
@@ -1062,6 +1066,10 @@ const Renderer = struct {
         try self.writer.writeAll("packed struct(u32) {");
 
         for (container.fields) |field| {
+            if (field.comment) |comment| {
+                try self.renderDocComment(comment);
+            }
+
             const bits = field.bits.?;
             try self.writeIdentifierWithCase(.snake, field.name);
             try self.writer.writeAll(": ");
@@ -1090,6 +1098,10 @@ const Renderer = struct {
     }
 
     fn renderContainer(self: *Self, name: []const u8, container: reg.Container) !void {
+        if (container.comment) |comment| {
+            try self.renderDocComment(comment);
+        }
+
         try self.writer.writeAll("pub const ");
         try self.renderName(name);
         try self.writer.writeAll(" = ");
@@ -1113,6 +1125,10 @@ const Renderer = struct {
         }
 
         for (container.fields) |field| {
+            if (field.comment) |comment| {
+                try self.renderDocComment(comment);
+            }
+
             try self.writeIdentifierWithCase(.snake, field.name);
             try self.writer.writeAll(": ");
             if (field.bits) |bits| {
@@ -1208,6 +1224,10 @@ const Renderer = struct {
             if (field.value == .alias)
                 continue;
 
+            if (field.comment) |comment| {
+                try self.renderDocComment(comment);
+            }
+
             try self.renderEnumFieldName(name, field.name);
             switch (field.value) {
                 .int => |int| try self.writer.print(" = {}, ", .{int}),
@@ -1254,16 +1274,25 @@ const Renderer = struct {
         if (bits.fields.len == 0) {
             try self.writer.print("_reserved_bits: {s} = 0,", .{flags_type});
         } else {
-            var flags_by_bitpos = [_]?[]const u8{null} ** 64;
+            var flags_by_bitpos = [_]?struct {
+                name: []const u8,
+                comment: ?[]const u8,
+            }{null} ** 64;
             for (bits.fields) |field| {
                 if (field.value == .bitpos) {
-                    flags_by_bitpos[field.value.bitpos] = field.name;
+                    flags_by_bitpos[field.value.bitpos] = .{
+                        .name = field.name,
+                        .comment = field.comment,
+                    };
                 }
             }
 
-            for (flags_by_bitpos[0..bits.bitwidth], 0..) |maybe_flag_name, bitpos| {
-                if (maybe_flag_name) |flag_name| {
-                    const field_name = try extractBitflagFieldName(bitflag_name, flag_name);
+            for (flags_by_bitpos[0..bits.bitwidth], 0..) |maybe_flag, bitpos| {
+                if (maybe_flag) |flag| {
+                    if (flag.comment) |comment| {
+                        try self.renderDocComment(comment);
+                    }
+                    const field_name = try extractBitflagFieldName(bitflag_name, flag.name);
                     try self.writeIdentifierWithCase(.snake, field_name);
                 } else {
                     try self.writer.print("_reserved_bit_{}", .{bitpos});
@@ -2318,6 +2347,27 @@ const Renderer = struct {
                 try self.writer.writeAll(".len");
 
                 try self.writer.writeAll(");\n");
+            }
+        }
+    }
+
+    fn renderDocComment(self: *Self, comment: []const u8) !void {
+        // Need a newline to avoid syntax error due to a doc comment in trailing
+        // position on a line
+        try self.writer.writeByte('\n');
+
+        // Handle multi-line comments
+        // NOTE: in practice, all comments we are interested in are single line
+        var lines = std.mem.splitScalar(u8, comment, '\n');
+        while (lines.next()) |line| {
+            if (line.len == 0) {
+                continue;
+            }
+
+            try self.writer.writeAll("/// ");
+            try self.writer.writeAll(std.mem.trim(u8, comment, "/ "));
+            if (line[line.len - 1] != '\n') {
+                try self.writer.writeByte('\n');
             }
         }
     }
