@@ -116,39 +116,39 @@ const command_flags_mixin =
     \\        pub fn merge(lhs: CommandFlags, rhs: CommandFlags) CommandFlags {
     \\            var result: CommandFlags = .{};
     \\            @setEvalBranchQuota(10_000);
-    \\            inline for (@typeInfo(CommandFlags).@"struct".fields) |field| {
-    \\                @field(result, field.name) = @field(lhs, field.name) or @field(rhs, field.name);
+    \\            inline for (@typeInfo(CommandFlags).@"struct".field_names) |field_name| {
+    \\                @field(result, field_name) = @field(lhs, field_name) or @field(rhs, field_name);
     \\            }
     \\            return result;
     \\        }
     \\        pub fn intersect(lhs: CommandFlags, rhs: CommandFlags) CommandFlags {
     \\            var result: CommandFlags = .{};
     \\            @setEvalBranchQuota(10_000);
-    \\            inline for (@typeInfo(CommandFlags).@"struct".fields) |field| {
-    \\                @field(result, field.name) = @field(lhs, field.name) and @field(rhs, field.name);
+    \\            inline for (@typeInfo(CommandFlags).@"struct".field_names) |field_name| {
+    \\                @field(result, field_name) = @field(lhs, field_name) and @field(rhs, field_name);
     \\            }
     \\            return result;
     \\        }
     \\        pub fn complement(self: CommandFlags) CommandFlags {
     \\            var result: CommandFlags = .{};
     \\            @setEvalBranchQuota(10_000);
-    \\            inline for (@typeInfo(CommandFlags).@"struct".fields) |field| {
-    \\                @field(result, field.name) = !@field(self, field.name);
+    \\            inline for (@typeInfo(CommandFlags).@"struct".field_names) |field_name| {
+    \\                @field(result, field_name) = !@field(self, field_name);
     \\            }
     \\            return result;
     \\        }
     \\        pub fn subtract(lhs: CommandFlags, rhs: CommandFlags) CommandFlags {
     \\            var result: CommandFlags = .{};
     \\            @setEvalBranchQuota(10_000);
-    \\            inline for (@typeInfo(CommandFlags).@"struct".fields) |field| {
-    \\                @field(result, field.name) = @field(lhs, field.name) and !@field(rhs, field.name);
+    \\            inline for (@typeInfo(CommandFlags).@"struct".field_names) |field_name| {
+    \\                @field(result, field_name) = @field(lhs, field_name) and !@field(rhs, field_name);
     \\            }
     \\            return result;
     \\        }
     \\        pub fn contains(lhs: CommandFlags, rhs: CommandFlags) bool {
     \\            @setEvalBranchQuota(10_000);
-    \\            inline for (@typeInfo(CommandFlags).@"struct".fields) |field| {
-    \\                if (!@field(lhs, field.name) and @field(rhs, field.name)) {
+    \\            inline for (@typeInfo(CommandFlags).@"struct".field_names) |field_name| {
+    \\                if (!@field(lhs, field_name) and @field(rhs, field_name)) {
     \\                    return false;
     \\                }
     \\            }
@@ -1570,9 +1570,9 @@ const Renderer = struct {
         try self.writer.print(
             \\pub fn load({[params]s}) Self {{
             \\    var self: Self = .{{ .dispatch = .{{}} }};
-            \\    inline for (std.meta.fields(Dispatch)) |field| {{
-            \\        if (loader({[first_arg]s}, field.name.ptr)) |cmd_ptr| {{
-            \\            @field(self.dispatch, field.name) = @ptrCast(cmd_ptr);
+            \\    inline for (@typeInfo(Dispatch).@"struct".field_names) |field_name| {{
+            \\        if (loader({[first_arg]s}, field_name.ptr)) |cmd_ptr| {{
+            \\            @field(self.dispatch, field_name) = @ptrCast(cmd_ptr);
             \\        }}
             \\    }}
             \\    return self;
